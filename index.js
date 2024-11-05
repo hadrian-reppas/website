@@ -2,10 +2,11 @@ import Delaunator from "https://cdn.skypack.dev/delaunator@5.0.0";
 
 const MIN_FRAME_TIME = 50;
 const POINT_DENSITY = 0.00005;
-const MAX_VELOCITY = 0.001;
+const MAX_VELOCITY = 2;
 const MIN_POINT_COUNT_DIFF = 10;
+const PADDING = 400;
 
-let canvas, width, height, padding, points, velocities, delaunay;
+let canvas, width, height, points, velocities, delaunay;
 let vertices = new Float32Array(0),
   colors = new Float32Array(0);
 let gl, vertexBuffer, colorBuffer, aVertexPosition, aVertexColor, uResolution;
@@ -28,20 +29,18 @@ const resizeCanvas = () => {
   canvas.height = height = Math.round(window.innerHeight * ratio);
   gl.viewport(0, 0, width, height);
   gl.uniform2f(uResolution, width, height);
-  padding = Math.max(0.2 * width, 0.2 * height, 100);
 };
 
-const resizePointArray = (oldWidth, oldHeight, oldPadding) => {
-  const paddedWidth = width + 2 * padding;
-  const paddedHeight = height + 2 * padding;
-  const oldPaddedWidth = oldWidth + 2 * oldPadding;
-  const oldPaddedHeight = oldHeight + 2 * oldPadding;
+const resizePointArray = (oldWidth, oldHeight) => {
+  const paddedWidth = width + 2 * PADDING;
+  const paddedHeight = height + 2 * PADDING;
+  const oldPaddedWidth = oldWidth + 2 * PADDING;
+  const oldPaddedHeight = oldHeight + 2 * PADDING;
   const area = paddedWidth * paddedHeight;
   const pointCount = Math.ceil(POINT_DENSITY * area) + 4;
   const oldPointCount = points.length / 2;
 
-  if (Math.abs(pointCount - oldPointCount) < MIN_POINT_COUNT_DIFF)
-    return;
+  if (Math.abs(pointCount - oldPointCount) < MIN_POINT_COUNT_DIFF) return;
 
   const newPoints = new Float32Array(2 * pointCount);
   const newVelocities = new Float32Array(2 * pointCount);
@@ -49,10 +48,10 @@ const resizePointArray = (oldWidth, oldHeight, oldPadding) => {
   let copied = 8;
   for (let i = 8; i < 2 * oldPointCount; i += 2) {
     if (
-      points[i] < -padding ||
-      width + padding < points[i] ||
-      points[i + 1] < -padding ||
-      height + padding < points[i + 1]
+      points[i] < -PADDING ||
+      width + PADDING < points[i] ||
+      points[i + 1] < -PADDING ||
+      height + PADDING < points[i + 1]
     )
       continue;
 
@@ -65,24 +64,46 @@ const resizePointArray = (oldWidth, oldHeight, oldPadding) => {
     if (copied === 2 * pointCount) break;
   }
 
-  for (; copied < 2 * pointCount; copied += 2) {
-    if (width > oldWidth && height > oldHeight) {
-      newPoints[copied] = paddedWidth * Math.random() - padding;
-      newPoints[copied + 1] = paddedHeight * Math.random() - padding;
-    } else if (width > oldWidth) {
-      const position = (width + padding) - (oldWidth + oldPadding);
-      newPoints[copied] = position * Math.random() + oldWidth + oldPadding;
-      newPoints[copied + 1] = paddedHeight * Math.random() - padding;
-    } else {
-      const position = (height + padding) - (oldHeight + oldPadding);
-      newPoints[copied] = paddedWidth * Math.random() - padding;
-      newPoints[copied + 1] = position * Math.random() + oldHeight + oldPadding;
-    }
+  if (width > oldWidth && height > oldHeight) {
+    const newAreaAbove = paddedWidth * (height - oldHeight);
+    const newAreaRight = (width - oldWidth) * oldPaddedHeight;
+    const pAbove = newAreaAbove / (newAreaAbove + newAreaRight);
+    for (; copied < 2 * pointCount; copied += 2) {
+      if (Math.random() < pAbove) {
+        newPoints[copied] = paddedWidth * Math.random() - PADDING;
+        newPoints[copied + 1] = (height - oldHeight) * Math.random() + oldHeight + PADDING;
+      } else {
+        newPoints[copied] = (width - oldWidth) * Math.random() + oldWidth + PADDING;
+        newPoints[copied + 1] = oldPaddedHeight * Math.random() - PADDING;
+      }
 
-    const angle = 2 * Math.PI * Math.random();
-    const magnitude = MAX_VELOCITY * Math.random();
-    newVelocities[copied] = magnitude * Math.cos(angle)
-    newVelocities[copied + 1] = magnitude * Math.sin(angle);
+      const angle = 2 * Math.PI * Math.random();
+      const magnitude = MAX_VELOCITY * Math.random();
+      newVelocities[copied] = magnitude * Math.cos(angle);
+      newVelocities[copied + 1] = magnitude * Math.sin(angle);
+    }
+  } else if (width > oldWidth) {
+    for (; copied < 2 * pointCount; copied += 2) {
+      newPoints[copied] =
+        (width - oldWidth) * Math.random() + oldWidth + PADDING;
+      newPoints[copied + 1] = paddedHeight * Math.random() - PADDING;
+
+      const angle = 2 * Math.PI * Math.random();
+      const magnitude = MAX_VELOCITY * Math.random();
+      newVelocities[copied] = magnitude * Math.cos(angle);
+      newVelocities[copied + 1] = magnitude * Math.sin(angle);
+    }
+  } else {
+    for (; copied < 2 * pointCount; copied += 2) {
+      newPoints[copied] = paddedWidth * Math.random() - PADDING;
+      newPoints[copied + 1] =
+        (height - oldHeight) * Math.random() + oldHeight + PADDING;
+
+      const angle = 2 * Math.PI * Math.random();
+      const magnitude = MAX_VELOCITY * Math.random();
+      newVelocities[copied] = magnitude * Math.cos(angle);
+      newVelocities[copied + 1] = magnitude * Math.sin(angle);
+    }
   }
 
   points = newPoints;
@@ -91,8 +112,8 @@ const resizePointArray = (oldWidth, oldHeight, oldPadding) => {
 };
 
 const initializePoints = () => {
-  const paddedWidth = width + 2 * padding;
-  const paddedHeight = height + 2 * padding;
+  const paddedWidth = width + 2 * PADDING;
+  const paddedHeight = height + 2 * PADDING;
   const area = paddedWidth * paddedHeight;
   const pointCount = Math.ceil(POINT_DENSITY * area) + 4;
 
@@ -100,11 +121,11 @@ const initializePoints = () => {
   velocities = new Float32Array(2 * pointCount);
 
   for (let i = 8; i < 2 * pointCount; i += 2) {
-    points[i] = paddedWidth * Math.random() - padding;
-    points[i + 1] = paddedHeight * Math.random() - padding;
+    points[i] = paddedWidth * Math.random() - PADDING;
+    points[i + 1] = paddedHeight * Math.random() - PADDING;
     const angle = 2 * Math.PI * Math.random();
     const magnitude = MAX_VELOCITY * Math.random();
-    velocities[i] = magnitude * Math.cos(angle)
+    velocities[i] = magnitude * Math.cos(angle);
     velocities[i + 1] = magnitude * Math.sin(angle);
   }
 
@@ -115,32 +136,30 @@ const updateCornerPoints = () => {
   points[0] = 0;
   points[1] = 0;
 
-  points[2] = width + padding;
+  points[2] = width + PADDING;
   points[3] = 0;
 
   points[4] = 0;
-  points[5] = height + padding;
+  points[5] = height + PADDING;
 
-  points[6] = width + padding;
-  points[7] = height + padding;
+  points[6] = width + PADDING;
+  points[7] = height + PADDING;
 };
 
 const recomputeVertices = () => {
-  const paddedWidth = width + 2 * padding;
-  const paddedHeight = height + 2 * padding;
+  const paddedWidth = width + 2 * PADDING;
+  const paddedHeight = height + 2 * PADDING;
   for (let i = 8; i < points.length; i += 2) {
     points[i] += velocities[i];
     points[i + 1] += velocities[i + 1];
-    if (points[i] < -padding) points[i] += paddedWidth;
-    else if (points[i] > width + padding) points[i] -= paddedWidth;
-    if (points[i + 1] < -padding) points[i + 1] += paddedHeight;
-    else if (points[i + 1] > height + padding) points[i + 1] -= paddedHeight;
+    if (points[i] < -PADDING) points[i] += paddedWidth;
+    else if (points[i] > width + PADDING) points[i] -= paddedWidth;
+    if (points[i + 1] < -PADDING) points[i + 1] += paddedHeight;
+    else if (points[i + 1] > height + PADDING) points[i + 1] -= paddedHeight;
   }
 
-  if (delaunay)
-    delaunay.update();
-  else
-    delaunay = new Delaunator(points);
+  if (delaunay) delaunay.update();
+  else delaunay = new Delaunator(points);
 
   const triangles = delaunay.triangles;
   if (vertices.length !== 2 * triangles.length)
@@ -274,14 +293,13 @@ const requestRedraw = (timestamp) => {
 const forceRedraw = () => {
   lastFrame = 0;
   requestRedraw(document.timeline.currentTime);
-}
+};
 
 const handleResize = () => {
   const oldWidth = width;
   const oldHeigt = height;
-  const oldPadding = padding;
   resizeCanvas();
-  resizePointArray(oldWidth, oldHeigt, oldPadding);
+  resizePointArray(oldWidth, oldHeigt);
   updateCornerPoints();
   forceRedraw();
 };
