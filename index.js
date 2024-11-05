@@ -3,7 +3,6 @@ import Delaunator from "https://cdn.skypack.dev/delaunator@5.0.0";
 const MIN_FRAME_TIME = 50;
 const POINT_DENSITY = 0.00005;
 const MAX_VELOCITY = 2;
-const MIN_POINT_COUNT_DIFF = 10;
 const PADDING = 400;
 
 let canvas, width, height, points, velocities, delaunay;
@@ -34,13 +33,10 @@ const resizeCanvas = () => {
 const resizePointArray = (oldWidth, oldHeight) => {
   const paddedWidth = width + 2 * PADDING;
   const paddedHeight = height + 2 * PADDING;
-  const oldPaddedWidth = oldWidth + 2 * PADDING;
   const oldPaddedHeight = oldHeight + 2 * PADDING;
   const area = paddedWidth * paddedHeight;
   const pointCount = Math.ceil(POINT_DENSITY * area) + 4;
   const oldPointCount = points.length / 2;
-
-  if (Math.abs(pointCount - oldPointCount) < MIN_POINT_COUNT_DIFF) return;
 
   const newPoints = new Float32Array(2 * pointCount);
   const newVelocities = new Float32Array(2 * pointCount);
@@ -71,9 +67,11 @@ const resizePointArray = (oldWidth, oldHeight) => {
     for (; copied < 2 * pointCount; copied += 2) {
       if (Math.random() < pAbove) {
         newPoints[copied] = paddedWidth * Math.random() - PADDING;
-        newPoints[copied + 1] = (height - oldHeight) * Math.random() + oldHeight + PADDING;
+        newPoints[copied + 1] =
+          (height - oldHeight) * Math.random() + oldHeight + PADDING;
       } else {
-        newPoints[copied] = (width - oldWidth) * Math.random() + oldWidth + PADDING;
+        newPoints[copied] =
+          (width - oldWidth) * Math.random() + oldWidth + PADDING;
         newPoints[copied + 1] = oldPaddedHeight * Math.random() - PADDING;
       }
 
