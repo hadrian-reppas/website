@@ -2,7 +2,7 @@ import Delaunator from "https://cdn.skypack.dev/delaunator@5.0.0";
 
 const MIN_FRAME_TIME = 50;
 const POINT_DENSITY = 0.00005;
-const MAX_VELOCITY = 2;
+const MAX_VELOCITY = 0.001;
 const MIN_POINT_COUNT_DIFF = 10;
 
 let canvas, width, height, padding, points, velocities, delaunay;
@@ -31,9 +31,11 @@ const resizeCanvas = () => {
   padding = Math.max(0.2 * width, 0.2 * height, 100);
 };
 
-const resizePointArray = (oldWidth, oldHeigt, oldPadding) => {
+const resizePointArray = (oldWidth, oldHeight, oldPadding) => {
   const paddedWidth = width + 2 * padding;
   const paddedHeight = height + 2 * padding;
+  const oldPaddedWidth = oldWidth + 2 * oldPadding;
+  const oldPaddedHeight = oldHeight + 2 * oldPadding;
   const area = paddedWidth * paddedHeight;
   const pointCount = Math.ceil(POINT_DENSITY * area) + 4;
   const oldPointCount = points.length / 2;
@@ -64,8 +66,19 @@ const resizePointArray = (oldWidth, oldHeigt, oldPadding) => {
   }
 
   for (; copied < 2 * pointCount; copied += 2) {
-    newPoints[copied] = paddedWidth * Math.random() - padding;
-    newPoints[copied + 1] = paddedHeight * Math.random() - padding;
+    if (width > oldWidth && height > oldHeight) {
+      newPoints[copied] = paddedWidth * Math.random() - padding;
+      newPoints[copied + 1] = paddedHeight * Math.random() - padding;
+    } else if (width > oldWidth) {
+      const position = (width + padding) - (oldWidth + oldPadding);
+      newPoints[copied] = position * Math.random() + oldWidth + oldPadding;
+      newPoints[copied + 1] = paddedHeight * Math.random() - padding;
+    } else {
+      const position = (height + padding) - (oldHeight + oldPadding);
+      newPoints[copied] = paddedWidth * Math.random() - padding;
+      newPoints[copied + 1] = position * Math.random() + oldHeight + oldPadding;
+    }
+
     const angle = 2 * Math.PI * Math.random();
     const magnitude = MAX_VELOCITY * Math.random();
     newVelocities[copied] = magnitude * Math.cos(angle)
@@ -179,7 +192,7 @@ const setup = () => {
       vec2 zeroToOne = aVertexPosition / uResolution;
       vec2 zeroToTwo = zeroToOne * 2.0;
       vec2 clipSpace = zeroToTwo - 1.0;
-      gl_Position = vec4(clipSpace, 0, 1);
+      gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
       vColor = aVertexColor;
     }
   `;
