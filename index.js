@@ -2,7 +2,8 @@ import Delaunator from "https://cdn.skypack.dev/delaunator@5.0.0";
 
 const MIN_FRAME_TIME = 50;
 const POINT_DENSITY = 0.00005;
-const MIN_RESIZE_DISTANCE = 200;
+const MAX_VELOCITY = 2;
+const MIN_POINT_COUNT_DIFF = 10;
 
 let canvas, width, height, padding, points, velocities, delaunay;
 let vertices = new Float32Array(0),
@@ -29,22 +30,25 @@ const resizeCanvas = () => {
   gl.viewport(0, 0, width, height);
   gl.uniform2f(uResolution, width, height);
   padding = Math.max(0.2 * width, 0.2 * height, 100);
-  console.log(width, height, padding);
 };
 
 const resizePointArray = (oldWidth, oldHeigt) => {
-  const start = document.timeline.currentTime;
-  console.log("copying at", start);
   const paddedWidth = width + 2 * padding;
   const paddedHeight = height + 2 * padding;
   const area = paddedWidth * paddedHeight;
   const pointCount = Math.ceil(POINT_DENSITY * area) + 4;
+  const oldPointCount = points.length / 2;
+
+  if (Math.abs(pointCount - oldPointCount) < MIN_POINT_COUNT_DIFF)
+    return;
 
   const newPoints = new Float32Array(2 * pointCount);
   const newVelocities = new Float32Array(2 * pointCount);
 
+  console.log("new:", pointCount, "old:", oldPointCount);
+
   let copied = 8;
-  for (let i = 8; i < 2 * pointCount; i += 2) {
+  for (let i = 8; i < 2 * oldPointCount; i += 2) {
     if (
       points[i] < -padding ||
       width + padding < points[i] ||
@@ -53,14 +57,31 @@ const resizePointArray = (oldWidth, oldHeigt) => {
     )
       continue;
 
-    newPoints[i] = points[i];
-    newPoints[i + 1] = points[i + 1];
-    newVelocities[i] = velocities[i];
-    newVelocities[i + 1] = velocities[i + 1];
+    newPoints[copied] = points[i];
+    newPoints[copied + 1] = points[i + 1];
+    newVelocities[copied] = velocities[i];
+    newVelocities[copied + 1] = velocities[i + 1];
     copied += 2;
 
     if (copied === 2 * pointCount) break;
   }
+
+  console.log("new:", pointCount, "old:", oldPointCount);
+
+  for (; copied < 2 * pointCount; copied += 2) {
+    points[copied] = paddedWidth * Math.random() - padding;
+    points[copied + 1] = paddedHeight * Math.random() - padding;
+    const angle = 2 * Math.PI * Math.random();
+    const magnitude = MAX_VELOCITY * Math.random();
+    velocities[copied] = magnitude * Math.cos(angle)
+    velocities[copied + 1] = magnitude * Math.sin(angle);
+  }
+
+  points = newPoints;
+  velocities = newVelocities;
+  delaunay = undefined;
+
+  console.log("new:", pointCount, "old:", oldPointCount);
 };
 
 const initializePoints = () => {
@@ -75,8 +96,10 @@ const initializePoints = () => {
   for (let i = 8; i < 2 * pointCount; i += 2) {
     points[i] = paddedWidth * Math.random() - padding;
     points[i + 1] = paddedHeight * Math.random() - padding;
-    velocities[i] = 6 * Math.random() - 3;
-    velocities[i + 1] = 6 * Math.random() - 3;
+    const angle = 2 * Math.PI * Math.random();
+    const magnitude = MAX_VELOCITY * Math.random();
+    velocities[i] = magnitude * Math.cos(angle)
+    velocities[i + 1] = magnitude * Math.sin(angle);
   }
 
   updateCornerPoints();
@@ -94,8 +117,6 @@ const updateCornerPoints = () => {
 
   points[6] = width + padding;
   points[7] = height + padding;
-
-  console.log(points.subarray(0, 8));
 };
 
 const recomputeVertices = () => {
