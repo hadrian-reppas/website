@@ -19,7 +19,6 @@ const drawTriangles = () => {
   gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
   gl.vertexAttribPointer(aVertexColor, 3, gl.FLOAT, false, 0, 0);
 
-  // gl.clear(gl.COLOR_BUFFER_BIT);
   gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2);
 };
 
@@ -32,7 +31,7 @@ const resizeCanvas = () => {
   padding = Math.max(0.2 * width, 0.2 * height, 100);
 };
 
-const resizePointArray = (oldWidth, oldHeigt) => {
+const resizePointArray = (oldWidth, oldHeigt, oldPadding) => {
   const paddedWidth = width + 2 * padding;
   const paddedHeight = height + 2 * padding;
   const area = paddedWidth * paddedHeight;
@@ -44,8 +43,6 @@ const resizePointArray = (oldWidth, oldHeigt) => {
 
   const newPoints = new Float32Array(2 * pointCount);
   const newVelocities = new Float32Array(2 * pointCount);
-
-  console.log("new:", pointCount, "old:", oldPointCount);
 
   let copied = 8;
   for (let i = 8; i < 2 * oldPointCount; i += 2) {
@@ -66,22 +63,18 @@ const resizePointArray = (oldWidth, oldHeigt) => {
     if (copied === 2 * pointCount) break;
   }
 
-  console.log("new:", pointCount, "old:", oldPointCount);
-
   for (; copied < 2 * pointCount; copied += 2) {
-    points[copied] = paddedWidth * Math.random() - padding;
-    points[copied + 1] = paddedHeight * Math.random() - padding;
+    newPoints[copied] = paddedWidth * Math.random() - padding;
+    newPoints[copied + 1] = paddedHeight * Math.random() - padding;
     const angle = 2 * Math.PI * Math.random();
     const magnitude = MAX_VELOCITY * Math.random();
-    velocities[copied] = magnitude * Math.cos(angle)
-    velocities[copied + 1] = magnitude * Math.sin(angle);
+    newVelocities[copied] = magnitude * Math.cos(angle)
+    newVelocities[copied + 1] = magnitude * Math.sin(angle);
   }
 
   points = newPoints;
   velocities = newVelocities;
   delaunay = undefined;
-
-  console.log("new:", pointCount, "old:", oldPointCount);
 };
 
 const initializePoints = () => {
@@ -243,8 +236,6 @@ const setup = () => {
   gl.enableVertexAttribArray(aVertexPosition);
   gl.enableVertexAttribArray(aVertexColor);
 
-  // gl.clearColor(0.2, 0.2, 0.2, 1.0);
-
   resizeCanvas();
   initializePoints();
   requestAnimationFrame(animationCallback);
@@ -275,8 +266,9 @@ const forceRedraw = () => {
 const handleResize = () => {
   const oldWidth = width;
   const oldHeigt = height;
+  const oldPadding = padding;
   resizeCanvas();
-  resizePointArray(oldWidth, oldHeigt);
+  resizePointArray(oldWidth, oldHeigt, oldPadding);
   updateCornerPoints();
   forceRedraw();
 };
