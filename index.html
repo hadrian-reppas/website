@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hadrian Reppas</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        background-color: red;
+      }
+
+      #canvas {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
+
+      @font-face {
+        font-family: "ExtraBold";
+        src: url("ExtraBold.woff2") format("woff2");
+      }
+
+      @font-face {
+        font-family: "Medium";
+        src: url("Medium.woff2") format("woff2");
+      }
+
+      .hero {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+      }
+
+      .name {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1;
+        font-family: "Medium", sans-serif;
+        font-size: min(4rem, 10vw);
+      }
+
+      .arrow {
+        margin-bottom: 1rem;
+      }
+    </style>
+    <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
+    <script src="/index.js" type="module"></script>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+
+    <div class="content">
+      <div class="hero">
+        <h1 class="name">Hadrian Reppas</h1>
+        <div class="arrow">
+          <div
+            style="
+              font-size: min(2rem, 5vw);
+              text-align: center;
+              font-family: 'Medium', sans-serif;
+            "
+          >
+            CV
+          </div>
+          <div style="font-size: min(8rem, 20vw)">&darr;</div>
+        </div>
+      </div>
+      <h1>Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+      <p>
+        Vestibulum posuere vehicula nisl, a congue dui posuere nec. Vivamus nec
+        eros nunc. Integer vitae ex quam.
+      </p>
+      <h1>More Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+      <p>
+        Vestibulum posuere vehicula nisl, a congue dui posuere nec. Vivamus nec
+        eros nunc. Integer vitae ex quam.
+      </p>
+      <h1>More Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+      <p>
+        Vestibulum posuere vehicula nisl, a congue dui posuere nec. Vivamus nec
+        eros nunc. Integer vitae ex quam.
+      </p>
+      <h1>More Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+      <p>
+        Vestibulum posuere vehicula nisl, a congue dui posuere nec. Vivamus nec
+        eros nunc. Integer vitae ex quam.
+      </p>
+      <h1>More Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+      <p>
+        Vestibulum posuere vehicula nisl, a congue dui posuere nec. Vivamus nec
+        eros nunc. Integer vitae ex quam.
+      </p>
+      <h1>More Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+      <p>
+        Vestibulum posuere vehicula nisl, a congue dui posuere nec. Vivamus nec
+        eros nunc. Integer vitae ex quam.
+      </p>
+      <h1>More Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+      <p>
+        Vestibulum posuere vehicula nisl, a congue dui posuere nec. Vivamus nec
+        eros nunc. Integer vitae ex quam.
+      </p>
+      <h1>More Scrollable Content</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis tincidunt
+        nisi non risus bibendum, id vehicula enim.
+      </p>
+      <p>
+        Suspendisse potenti. Fusce tincidunt felis et dui gravida, ut facilisis
+        metus gravida. Nulla facilisi.
+      </p>
+      <p>
+        Phasellus non dolor vitae ex varius facilisis. Integer ac elit
+        ultricies, sollicitudin turpis at, laoreet metus.
+      </p>
+    </div>
+  </body>
+</html>
