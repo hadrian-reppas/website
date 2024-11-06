@@ -1,11 +1,20 @@
 import Delaunator from "https://cdn.skypack.dev/delaunator@5.0.0";
 
-const MIN_FRAME_TIME = 50;
-const POINT_DENSITY = 0.00005;
+const MIN_FRAME_TIME = 30;
+const POINT_DENSITY = 0.00002;
+const MIN_VELOCITY = 1;
 const MAX_VELOCITY = 2;
+const SCROLL_VELOCITY_COEFF = 500;
+const MAX_SCROLL_VELOCITY = 0.03;
 const PADDING = 400;
 
+const COLOR1 = [128 / 255, 101 / 255, 233 / 255];
+const COLOR2 = [51/ 255, 0 / 255, 200 / 255];
+const COLOR3 = [25 / 255, 215 / 255, 130 / 255];
+
 let canvas, width, height, points, velocities, delaunay;
+let scrollPosition = 0,
+  scrollVelocity = 0;
 let vertices = new Float32Array(0),
   colors = new Float32Array(0);
 let gl, vertexBuffer, colorBuffer, aVertexPosition, aVertexColor, uResolution;
@@ -76,7 +85,7 @@ const resizePointArray = (oldWidth, oldHeight) => {
       }
 
       const angle = 2 * Math.PI * Math.random();
-      const magnitude = MAX_VELOCITY * Math.random();
+      const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
       newVelocities[copied] = magnitude * Math.cos(angle);
       newVelocities[copied + 1] = magnitude * Math.sin(angle);
     }
@@ -87,7 +96,7 @@ const resizePointArray = (oldWidth, oldHeight) => {
       newPoints[copied + 1] = paddedHeight * Math.random() - PADDING;
 
       const angle = 2 * Math.PI * Math.random();
-      const magnitude = MAX_VELOCITY * Math.random();
+      const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
       newVelocities[copied] = magnitude * Math.cos(angle);
       newVelocities[copied + 1] = magnitude * Math.sin(angle);
     }
@@ -98,7 +107,7 @@ const resizePointArray = (oldWidth, oldHeight) => {
         (height - oldHeight) * Math.random() + oldHeight + PADDING;
 
       const angle = 2 * Math.PI * Math.random();
-      const magnitude = MAX_VELOCITY * Math.random();
+      const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
       newVelocities[copied] = magnitude * Math.cos(angle);
       newVelocities[copied + 1] = magnitude * Math.sin(angle);
     }
@@ -122,7 +131,7 @@ const initializePoints = () => {
     points[i] = paddedWidth * Math.random() - PADDING;
     points[i + 1] = paddedHeight * Math.random() - PADDING;
     const angle = 2 * Math.PI * Math.random();
-    const magnitude = MAX_VELOCITY * Math.random();
+    const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
     velocities[i] = magnitude * Math.cos(angle);
     velocities[i + 1] = magnitude * Math.sin(angle);
   }
@@ -144,12 +153,36 @@ const updateCornerPoints = () => {
   points[7] = height + PADDING;
 };
 
+const getColor = (x) => {
+  const t = Math.min(Math.max(x, 0), 2);
+  if (t < 1) {
+    return [
+      (1 - t) * COLOR1[0] + t * COLOR2[0],
+      (1 - t) * COLOR1[1] + t * COLOR2[1],
+      (1 - t) * COLOR1[2] + t * COLOR2[2],
+    ];
+  } else {
+    const s = t - 1;
+    return [
+      (1 - s) * COLOR2[0] + s * COLOR3[0],
+      (1 - s) * COLOR2[1] + s * COLOR3[1],
+      (1 - s) * COLOR2[2] + s * COLOR3[2],
+    ];
+  }
+};
+
 const recomputeVertices = () => {
   const paddedWidth = width + 2 * PADDING;
   const paddedHeight = height + 2 * PADDING;
+  const effectiveScrollVelocity = Math.min(
+    Math.max(scrollVelocity, -MAX_SCROLL_VELOCITY),
+    MAX_SCROLL_VELOCITY
+  );
   for (let i = 8; i < points.length; i += 2) {
-    points[i] += velocities[i];
-    points[i + 1] += velocities[i + 1];
+    points[i] +=
+      velocities[i] * (1 + SCROLL_VELOCITY_COEFF * effectiveScrollVelocity);
+    points[i + 1] +=
+      velocities[i + 1] * (1 + SCROLL_VELOCITY_COEFF * effectiveScrollVelocity);
     if (points[i] < -PADDING) points[i] += paddedWidth;
     else if (points[i] > width + PADDING) points[i] -= paddedWidth;
     if (points[i + 1] < -PADDING) points[i + 1] += paddedHeight;
@@ -166,29 +199,29 @@ const recomputeVertices = () => {
     colors = new Float32Array(3 * triangles.length);
 
   for (let i = 0; 3 * i < triangles.length; i++) {
-    const a = triangles[3 * i];
-    const b = triangles[3 * i + 1];
-    const c = triangles[3 * i + 2];
-    vertices[6 * i] = points[2 * a];
-    vertices[6 * i + 1] = points[2 * a + 1];
-    vertices[6 * i + 2] = points[2 * b];
-    vertices[6 * i + 3] = points[2 * b + 1];
-    vertices[6 * i + 4] = points[2 * c];
-    vertices[6 * i + 5] = points[2 * c + 1];
+    const v1 = triangles[3 * i];
+    const v2 = triangles[3 * i + 1];
+    const v3 = triangles[3 * i + 2];
+    vertices[6 * i] = points[2 * v1];
+    vertices[6 * i + 1] = points[2 * v1 + 1];
+    vertices[6 * i + 2] = points[2 * v2];
+    vertices[6 * i + 3] = points[2 * v2 + 1];
+    vertices[6 * i + 4] = points[2 * v3];
+    vertices[6 * i + 5] = points[2 * v3 + 1];
 
     const midpoint =
       (vertices[6 * i] + vertices[6 * i + 2] + vertices[6 * i + 4]) / 3;
-    const gray = midpoint / width;
+    const [r, g, b] = getColor(midpoint / width + scrollPosition);
 
-    colors[9 * i] = gray;
-    colors[9 * i + 1] = gray;
-    colors[9 * i + 2] = gray;
-    colors[9 * i + 3] = gray;
-    colors[9 * i + 4] = gray;
-    colors[9 * i + 5] = gray;
-    colors[9 * i + 6] = gray;
-    colors[9 * i + 7] = gray;
-    colors[9 * i + 8] = gray;
+    colors[9 * i] = r;
+    colors[9 * i + 1] = g;
+    colors[9 * i + 2] = b;
+    colors[9 * i + 3] = r;
+    colors[9 * i + 4] = g;
+    colors[9 * i + 5] = b;
+    colors[9 * i + 6] = r;
+    colors[9 * i + 7] = g;
+    colors[9 * i + 8] = b;
   }
 };
 
@@ -284,6 +317,7 @@ const requestRedraw = (timestamp) => {
   if (elapsed < MIN_FRAME_TIME) return;
   lastFrame = timestamp;
 
+  handleScroll();
   recomputeVertices();
   drawTriangles();
 };
@@ -302,6 +336,15 @@ const handleResize = () => {
   forceRedraw();
 };
 
+const handleScroll = () => {
+  const scrollTop = window.scrollY;
+  const documentHeight =
+    document.documentElement.scrollHeight - window.innerHeight;
+  const newScrollPosition = scrollTop / documentHeight;
+  scrollVelocity = newScrollPosition - scrollPosition;
+  scrollPosition = newScrollPosition;
+};
+
 window.addEventListener("load", setup);
 window.addEventListener("resize", handleResize);
-window.addEventListener("scroll", () => console.log("TODO: handle scroll"));
+// window.addEventListener("scroll", handleScroll);
