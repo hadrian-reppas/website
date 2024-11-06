@@ -7,14 +7,16 @@ const MAX_VELOCITY = 2;
 const SCROLL_VELOCITY_COEFF = 500;
 const MAX_SCROLL_VELOCITY = 0.03;
 const PADDING = 400;
+const ARROW_SPEED = 0.1;
 
-const COLOR1 = [128 / 255, 101 / 255, 233 / 255];
-const COLOR2 = [51/ 255, 0 / 255, 200 / 255];
-const COLOR3 = [25 / 255, 215 / 255, 130 / 255];
+const COLOR1 = [0.5, 0.4, 0.91];
+const COLOR2 = [0.2, 0, 0.78];
+const COLOR3 = [0.1, 0.84, 0.51];
 
 let canvas, width, height, points, velocities, delaunay;
 let scrollPosition = 0,
-  scrollVelocity = 0;
+  scrollVelocity = 0,
+  arrowPhase = 0;
 let vertices = new Float32Array(0),
   colors = new Float32Array(0);
 let gl, vertexBuffer, colorBuffer, aVertexPosition, aVertexColor, uResolution;
@@ -85,7 +87,8 @@ const resizePointArray = (oldWidth, oldHeight) => {
       }
 
       const angle = 2 * Math.PI * Math.random();
-      const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
+      const magnitude =
+        (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
       newVelocities[copied] = magnitude * Math.cos(angle);
       newVelocities[copied + 1] = magnitude * Math.sin(angle);
     }
@@ -96,7 +99,8 @@ const resizePointArray = (oldWidth, oldHeight) => {
       newPoints[copied + 1] = paddedHeight * Math.random() - PADDING;
 
       const angle = 2 * Math.PI * Math.random();
-      const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
+      const magnitude =
+        (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
       newVelocities[copied] = magnitude * Math.cos(angle);
       newVelocities[copied + 1] = magnitude * Math.sin(angle);
     }
@@ -107,7 +111,8 @@ const resizePointArray = (oldWidth, oldHeight) => {
         (height - oldHeight) * Math.random() + oldHeight + PADDING;
 
       const angle = 2 * Math.PI * Math.random();
-      const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
+      const magnitude =
+        (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
       newVelocities[copied] = magnitude * Math.cos(angle);
       newVelocities[copied + 1] = magnitude * Math.sin(angle);
     }
@@ -131,7 +136,8 @@ const initializePoints = () => {
     points[i] = paddedWidth * Math.random() - PADDING;
     points[i + 1] = paddedHeight * Math.random() - PADDING;
     const angle = 2 * Math.PI * Math.random();
-    const magnitude = (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
+    const magnitude =
+      (MAX_VELOCITY - MIN_VELOCITY) * Math.random() + MIN_VELOCITY;
     velocities[i] = magnitude * Math.cos(angle);
     velocities[i + 1] = magnitude * Math.sin(angle);
   }
@@ -153,8 +159,7 @@ const updateCornerPoints = () => {
   points[7] = height + PADDING;
 };
 
-const getColor = (x) => {
-  const t = Math.min(Math.max(x, 0), 2);
+const getColor = (t) => {
   if (t < 1) {
     return [
       (1 - t) * COLOR1[0] + t * COLOR2[0],
@@ -209,9 +214,13 @@ const recomputeVertices = () => {
     vertices[6 * i + 4] = points[2 * v3];
     vertices[6 * i + 5] = points[2 * v3 + 1];
 
-    const midpoint =
+    const meanX =
       (vertices[6 * i] + vertices[6 * i + 2] + vertices[6 * i + 4]) / 3;
-    const [r, g, b] = getColor(midpoint / width + scrollPosition);
+    const meanY =
+      (vertices[6 * i + 1] + vertices[6 * i + 3] + vertices[6 * i + 5]) / 3;
+    const distance = (3 * meanX + meanY) / (3 * width + height);
+    const clamped = Math.min(Math.max(distance, 0), 1);
+    const [r, g, b] = getColor(clamped + scrollPosition);
 
     colors[9 * i] = r;
     colors[9 * i + 1] = g;
@@ -320,11 +329,25 @@ const requestRedraw = (timestamp) => {
   handleScroll();
   recomputeVertices();
   drawTriangles();
+  updateArrow();
 };
 
 const forceRedraw = () => {
   lastFrame = 0;
   requestRedraw(document.timeline.currentTime);
+};
+
+const updateArrow = () => {
+  arrowPhase += ARROW_SPEED;
+  const path = document.getElementById("arrow-path");
+  const pathItems = ["M 10 -10"];
+  for (let i = 1; i <= 99; i++) {
+    const damping = Math.min(1, 3 - 0.03 * i);
+    const x = 10 + damping * 3.5 * Math.sin(0.25 * i + arrowPhase);
+    pathItems.push(`L ${x} ${i}`);
+  }
+  pathItems.push("M 1 91 L 10 100 L 19 91");
+  path.setAttribute("d", pathItems.join(" "));
 };
 
 const handleResize = () => {
@@ -347,4 +370,3 @@ const handleScroll = () => {
 
 window.addEventListener("load", setup);
 window.addEventListener("resize", handleResize);
-// window.addEventListener("scroll", handleScroll);

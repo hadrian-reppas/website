@@ -25,13 +25,8 @@
       }
 
       @font-face {
-        font-family: "ExtraBold";
-        src: url("ExtraBold.woff2") format("woff2");
-      }
-
-      @font-face {
-        font-family: "Medium";
-        src: url("Medium.woff2") format("woff2");
+        font-family: "Display";
+        src: url("Display.woff2") format("woff2");
       }
 
       #hero {
@@ -48,16 +43,36 @@
         justify-content: center;
         align-items: center;
         flex-grow: 1;
-        font-family: "Medium", sans-serif;
+        font-family: "Display", sans-serif;
         font-size: min(4rem, 10vw);
       }
 
       #arrow {
-        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: calc(2rem + (100dvh - 100lvh));
+        font-family: sans-serif;
+        font-weight: 100;
+        font-size: min(1.5rem, 5vw);
+        text-align: center;
       }
 
       #cv {
         color: white;
+        padding: 1rem;
+        max-width: 50rem;
+        margin: 0 auto;
+      }
+
+      .organization {
+        font-family: "Display";
+      }
+
+      .location {
+        font-family: sans-serif;
+        font-weight: 200;
       }
     </style>
     <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
@@ -70,25 +85,30 @@
       <div id="hero">
         <h1 id="name">Hadrian Reppas</h1>
         <div id="arrow">
-          <div
-            style="
-              font-size: min(2rem, 5vw);
-              text-align: center;
-              font-family: 'Medium', sans-serif;
-            "
-          >
+          <div>
             CV
           </div>
-          <div style="font-size: min(8rem, 20vw)">&darr;</div>
+          <svg
+            style="width: min(20px, 5vw); height: min(100px, 25vw)"
+            viewBox="0 1 20 100"
+          >
+            <path
+              id="arrow-path"
+              d=""
+              fill="none"
+              stroke="white"
+              stroke-width="1.5"
+            ></path>
+          </svg>
         </div>
       </div>
       <div id="cv">
-        <h3>University of Chicago</h3>
+        <h3 class="organization">University of Chicago<span class="location">&nbsp; Chicago, IL</span></h3>
         <p>S.B. Mathematics, S.B. Computer Science</p>
         <br />
         <h3>Phillips Academy</h3>
-        <br>
-        <br>
+        <br />
+        <br />
         <h3>Core Development Intern</h3>
         <p>Hudson River Trading</p>
         <br />
