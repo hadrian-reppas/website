@@ -329,25 +329,11 @@ const requestRedraw = (timestamp) => {
   handleScroll();
   recomputeVertices();
   drawTriangles();
-  updateArrow();
 };
 
 const forceRedraw = () => {
   lastFrame = 0;
   requestRedraw(document.timeline.currentTime);
-};
-
-const updateArrow = () => {
-  arrowPhase += ARROW_SPEED;
-  const path = document.getElementById("arrow-path");
-  const pathItems = ["M 10 -10"];
-  for (let i = 1; i <= 99; i++) {
-    const damping = Math.min(1, 3 - 0.03 * i);
-    const x = 10 + damping * 3.5 * Math.sin(0.25 * i + arrowPhase);
-    pathItems.push(`L ${x} ${i}`);
-  }
-  pathItems.push("M 1 91 L 10 100 L 19 91");
-  path.setAttribute("d", pathItems.join(" "));
 };
 
 const handleResize = () => {
