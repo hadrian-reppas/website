@@ -236,6 +236,7 @@ const recomputeVertices = () => {
 };
 
 const setup = () => {
+  history.replaceState(null, "", "/");
   canvas = document.getElementById("canvas");
   gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
   if (!gl) {
