@@ -2,12 +2,11 @@ import Delaunator from "https://cdn.skypack.dev/delaunator@5.0.0";
 
 const MIN_FRAME_TIME = 30;
 const POINT_DENSITY = 0.00002;
-const MIN_VELOCITY = 1;
-const MAX_VELOCITY = 2;
+const MIN_VELOCITY = 0.8;
+const MAX_VELOCITY = 1.5;
 const SCROLL_VELOCITY_COEFF = 0.4;
 const COLOR_POSITION_COEFF = 0.0004;
 const COLOR_DRIFT_VELOCITY = 14;
-const MAX_SCROLL_VELOCITY = 20;
 const PADDING = 400;
 
 const COLOR1 = [0.5, 0.4, 0.91];
@@ -347,10 +346,7 @@ const handleResize = () => {
 };
 
 const handleWheel = (event) => {
-  scrollVelocity = -Math.min(
-    Math.max(event.wheelDeltaY, -MAX_SCROLL_VELOCITY),
-    MAX_SCROLL_VELOCITY
-  );
+  scrollVelocity = -Math.sign(event.wheelDelta) * Math.sqrt(Math.abs(event.wheelDeltaY));
   scrollPosition += scrollVelocity;
 };
 
