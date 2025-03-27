@@ -1,0 +1,61 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overscroll-behavior: none;
+}
+
+html {
+  background-image: linear-gradient(to bottom right, #7f66e8, #3300c7);
+}
+
+#canvas {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
+@font-face {
+  font-family: "Display";
+  src: url("Display.woff2") format("woff2");
+}
+
+.hero {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.name {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+  font-family: "Display", sans-serif;
+  font-size: min(4rem, 10vw);
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  gap: 1.4rem;
+  margin-bottom: calc(3rem + (100dvh - 100lvh));
+}
+
+.link img {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  width: 2.5rem;
+  height: auto;
+}
+
+.link img:hover {
+  opacity: 0.8;
+}

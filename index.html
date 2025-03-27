@@ -5,131 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hadrian Reppas</title>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
 
-      html {
-        background-image: linear-gradient(to bottom right, #7f66e8, #3300c7);
-      }
-
-      #canvas {
-        position: fixed;
-        width: 100vw;
-        height: 100vh;
-        top: 0;
-        left: 0;
-        z-index: -1;
-      }
-
-      @font-face {
-        font-family: "Display";
-        src: url("Display.woff2") format("woff2");
-      }
-
-      .hero {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-        color: white;
-      }
-
-      .name {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-grow: 1;
-        font-family: "Display", sans-serif;
-        font-size: min(4rem, 10vw);
-      }
-
-      .arrow {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: calc(3rem + (100dvh - 100lvh));
-      }
-
-      .cv-text {
-        font-family: sans-serif;
-        font-weight: 100;
-        font-size: min(1.5rem, 5vw);
-      }
-
-      .cv {
-        color: white;
-        padding: min(2rem, 8vw);
-        padding-top: 4rem;
-        max-width: 50rem;
-        margin: 0 auto;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        gap: 4rem 0;
-      }
-
-      .organization {
-        font-family: "Display";
-        font-size: min(1.5rem, 4.5vw);
-      }
-
-      .location {
-        font-family: sans-serif;
-        font-weight: 100;
-        font-size: min(1.3rem, 3.9vw);
-        opacity: 80%;
-      }
-
-      .role {
-        font-weight: 500;
-        font-size: min(1.3rem, 3.9vw);
-        grid-column: span 2;
-        font-family: sans-serif;
-        margin-top: 1px;
-      }
-
-      .section {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem 0;
-      }
-
-      .item {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-      }
-
-      .item-left {
-        grid-column: span 2;
-      }
-
-      .item-right {
-        font-size: min(1.3rem, 3.9vw);
-        font-family: sans-serif;
-        font-weight: 100;
-        text-align: right;
-        opacity: 80%;
-      }
-
-      @media (max-width: 50rem) {
-        .item {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .item-right {
-          text-align: left;
-        }
-      }
-
-      .section-title {
-        text-align: center;
-        font-family: "Display";
-      }
     </style>
     <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
     <script src="/index.js" type="module"></script>
@@ -140,66 +16,13 @@
     <div class="content">
       <div class="hero">
         <h1 class="name">Hadrian Reppas</h1>
-        <div class="arrow">
-          <h2 class="cv-text">CV</h2>
-          <svg
-            style="width: min(20px, 5vw); height: min(10px, 2.5vw)"
-            viewBox="0 1 20 10"
-          >
-            <path
-              id="arrow-path"
-              d="M 1 1 L 10 10 L 19 1"
-              fill="none"
-              stroke="white"
-              stroke-width="1.5"
-            ></path>
-          </svg>
-        </div>
-      </div>
-      <div class="cv">
-        <div class="section">
-          <h3 class="section-title">Education</h3>
-          <div class="item">
-            <div class="item-left">
-              <span class="organization">University of Chicago</span
-              ><span class="location">&nbsp; Chicago,&thinsp;IL</span>
-            </div>
-            <div class="item-right">2022&thinsp;&ndash;&thinsp;2026</div>
-            <div class="role">BS in Mathematics, BS in Computer Science</div>
-          </div>
-          <div class="item">
-            <div class="item-left">
-              <span class="organization">Phillips Academy</span
-              ><span class="location">&nbsp; Andover,&thinsp;MA</span>
-            </div>
-            <div class="item-right">2019&thinsp;&ndash;&thinsp;2022</div>
-          </div>
-        </div>
-        <div class="section">
-          <h3 class="section-title">Experience</h3>
-          <div class="item">
-            <div class="item-left">
-              <span class="organization">Hudson River Trading</span
-              ><span class="location">&nbsp; New York,&thinsp;NY</span>
-            </div>
-            <div class="item-right">Summer 2025</div>
-            <div class="role">Core Development Intern</div>
-          </div>
-          <div class="item">
-            <div class="item-left">
-              <span class="organization">Clari</span
-              ><span class="location">&nbsp; Sunnyvale,&thinsp;CA</span>
-            </div>
-            <div class="item-right">Summer 2024</div>
-            <div class="role">Software Engineering Intern</div>
-          </div>
-          <div class="item">
-            <div class="item-left">
-              <span class="organization">Computer Science Instructional Lab</span>
-            </div>
-            <div class="item-right">May 2023&thinsp;&ndash;&thinsp;Present</div>
-            <div class="role">Software Developer</div>
-          </div>
+        <div class="links">
+          <a href="https://www.github.com/hadrian-reppas" target="_blank" class="link">
+            <img src="/github.svg" alt="GitHub" />
+          </a>
+          <a href="https://www.linkedin.com/in/hadrian-reppas" target="_blank" class="link">
+            <img src="/linkedin.svg" alt="LinkedIn" />
+          </a>
         </div>
       </div>
     </div>

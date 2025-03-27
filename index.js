@@ -4,21 +4,19 @@ const MIN_FRAME_TIME = 30;
 const POINT_DENSITY = 0.00002;
 const MIN_VELOCITY = 1;
 const MAX_VELOCITY = 2;
-const SCROLL_VELOCITY_COEFF = 500;
-const MAX_SCROLL_VELOCITY = 0.03;
+const SCROLL_VELOCITY_COEFF = 0.4;
+const COLOR_POSITION_COEFF = 0.0004;
+const COLOR_DRIFT_VELOCITY = 14;
+const MAX_SCROLL_VELOCITY = 20;
 const PADDING = 400;
-const ARROW_SPEED = 0.1;
 
 const COLOR1 = [0.5, 0.4, 0.91];
 const COLOR2 = [0.2, 0, 0.78];
 const COLOR3 = [0.1, 0.84, 0.51];
 
 let canvas, width, height, points, velocities, delaunay;
-let scrollPosition = 0,
-  scrollVelocity = 0,
-  arrowPhase = 0;
-let vertices = new Float32Array(0),
-  colors = new Float32Array(0);
+let scrollVelocity = 0, scrollPosition = 0, prevVelocity, prevVelocityCount = 0;
+let vertices = new Float32Array(0), colors = new Float32Array(0);
 let gl, vertexBuffer, colorBuffer, aVertexPosition, aVertexColor, uResolution;
 
 const drawTriangles = () => {
@@ -160,6 +158,8 @@ const updateCornerPoints = () => {
 };
 
 const getColor = (t) => {
+  t = t > 0 ? t % 4 : t % 4 + 4;
+  t = Math.min(t, 4 - t);
   if (t < 1) {
     return [
       (1 - t) * COLOR1[0] + t * COLOR2[0],
@@ -179,20 +179,23 @@ const getColor = (t) => {
 const recomputeVertices = () => {
   const paddedWidth = width + 2 * PADDING;
   const paddedHeight = height + 2 * PADDING;
-  const effectiveScrollVelocity = Math.min(
-    Math.max(scrollVelocity, -MAX_SCROLL_VELOCITY),
-    MAX_SCROLL_VELOCITY
-  );
   for (let i = 8; i < points.length; i += 2) {
     points[i] +=
-      velocities[i] * (1 + SCROLL_VELOCITY_COEFF * effectiveScrollVelocity);
+      velocities[i] * (1 + SCROLL_VELOCITY_COEFF * scrollVelocity);
     points[i + 1] +=
-      velocities[i + 1] * (1 + SCROLL_VELOCITY_COEFF * effectiveScrollVelocity);
+      velocities[i + 1] * (1 + SCROLL_VELOCITY_COEFF * scrollVelocity);
     if (points[i] < -PADDING) points[i] += paddedWidth;
     else if (points[i] > width + PADDING) points[i] -= paddedWidth;
     if (points[i + 1] < -PADDING) points[i + 1] += paddedHeight;
     else if (points[i + 1] > height + PADDING) points[i + 1] -= paddedHeight;
   }
+
+  scrollPosition += COLOR_DRIFT_VELOCITY;
+  if (scrollVelocity == prevVelocity)
+    prevVelocityCount += 1;
+  if (prevVelocityCount >= 3)
+    scrollVelocity = 0;
+  console.log()
 
   if (delaunay) delaunay.update();
   else delaunay = new Delaunator(points);
@@ -219,8 +222,7 @@ const recomputeVertices = () => {
     const meanY =
       (vertices[6 * i + 1] + vertices[6 * i + 3] + vertices[6 * i + 5]) / 3;
     const distance = (3 * meanX + meanY) / (3 * width + height);
-    const clamped = Math.min(Math.max(distance, 0), 1);
-    const [r, g, b] = getColor(clamped + scrollPosition);
+    const [r, g, b] = getColor(distance + COLOR_POSITION_COEFF * scrollPosition);
 
     colors[9 * i] = r;
     colors[9 * i + 1] = g;
@@ -326,7 +328,6 @@ const requestRedraw = (timestamp) => {
   if (elapsed < MIN_FRAME_TIME) return;
   lastFrame = timestamp;
 
-  handleScroll();
   recomputeVertices();
   drawTriangles();
 };
@@ -345,14 +346,14 @@ const handleResize = () => {
   forceRedraw();
 };
 
-const handleScroll = () => {
-  const scrollTop = window.scrollY;
-  const documentHeight =
-    document.documentElement.scrollHeight - window.innerHeight;
-  const newScrollPosition = scrollTop / documentHeight;
-  scrollVelocity = newScrollPosition - scrollPosition;
-  scrollPosition = newScrollPosition;
+const handleWheel = (event) => {
+  scrollVelocity = -Math.min(
+    Math.max(event.wheelDeltaY, -MAX_SCROLL_VELOCITY),
+    MAX_SCROLL_VELOCITY
+  );
+  scrollPosition += scrollVelocity;
 };
 
 window.addEventListener("load", setup);
 window.addEventListener("resize", handleResize);
+window.addEventListener("wheel", handleWheel);
