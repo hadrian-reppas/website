@@ -9,6 +9,12 @@ html {
   background-image: linear-gradient(to bottom right, #7f66e8, #3300c7);
 }
 
+body {
+  overflow: hidden;
+  width: 100dvw;
+  height: 100dvh;
+}
+
 #canvas {
   position: fixed;
   width: 100vw;
