@@ -24,13 +24,13 @@ body {
   z-index: -1;
 }
 
-.hero {
+.content {
   height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  color: white;
+  touch-action: manipulation
 }
 
 .name {
@@ -39,6 +39,7 @@ body {
   align-items: center;
   flex-grow: 1;
   font-family: "Display", sans-serif;
+  color: white;
   font-size: min(4rem, 10vw);
 }
 
@@ -47,7 +48,7 @@ body {
   align-items: center;
   align-content: center;
   gap: 1.4rem;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .link img {
