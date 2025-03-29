@@ -3,6 +3,7 @@
   padding: 0;
   box-sizing: border-box;
   overscroll-behavior: none;
+  touch-action: none;
 }
 
 html {
@@ -30,7 +31,6 @@ body {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  touch-action: none;
 }
 
 .name {
