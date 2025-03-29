@@ -192,9 +192,10 @@ const recomputeVertices = () => {
   scrollPosition += COLOR_DRIFT_VELOCITY;
   if (scrollVelocity == prevVelocity)
     prevVelocityCount += 1;
+  else
+    prevVelocity = scrollVelocity;
   if (prevVelocityCount >= 3)
     scrollVelocity = 0;
-  console.log()
 
   if (delaunay) delaunay.update();
   else delaunay = new Delaunator(points);
