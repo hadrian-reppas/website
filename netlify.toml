@@ -1,4 +1,9 @@
 [[redirects]]
-from = "/*"
+from = "/:path"
+to = "/"
+status = 302
+
+[[redirects]]
+from = "/:path/*"
 to = "/"
 status = 302
