@@ -67,77 +67,49 @@
       ];
       const TEXT_WIDTH = TEXT[0].length;
       const TEXT_HEIGHT = TEXT.length;
-      const LINKS = [
-        {
+      const LINKS = {
+        GitHub: {
           row: 40,
           col: 67,
           width: 54,
           height: 17,
-          href: "https://www.github.com/hadrian-reppas",
         },
-        {
+        LinkedIn: {
           row: 40,
           col: 125,
           width: 68,
           height: 17,
-          href: "https://www.linkedin.com/in/hadrian-reppas",
         },
-      ];
+      };
 
       var pixelSize;
-      var hoveredLink = null;
 
       const resize = () => {
         const scale = window.devicePixelRatio || 1;
         const canvas = document.getElementById("canvas");
         canvas.width = scale * window.innerWidth;
         canvas.height = scale * window.innerHeight;
-        pixelSize = canvas.width >= 5 * TEXT_WIDTH ? 4 : 3;
-        updateHoveredLink();
+        pixelSize =
+          canvas.width >= 5 * TEXT_WIDTH
+            ? 4
+            : canvas.width >= 3.4 * TEXT_WIDTH
+              ? 3
+              : 2;
         draw();
-      };
-
-      const updateHoveredLink = (event) => {
-        if (typeof event !== "object") return;
         const [xOffset, yOffset] = getOffsets();
-        const scale = window.devicePixelRatio || 1;
-        const row = Math.floor((scale * event.clientY) / pixelSize) - yOffset;
-        const col = Math.floor((scale * event.clientX) / pixelSize) - xOffset;
-        for (const link of LINKS) {
-          if (
-            link.row <= row &&
-            row < link.row + link.height &&
-            link.col <= col &&
-            col < link.col + link.width
-          ) {
-            if (link !== hoveredLink) {
-              hoveredLink = link;
-              draw();
-            }
-            return;
-          }
-        }
-        if (hoveredLink !== null) {
-          hoveredLink = null;
-          draw();
-        }
+        const unit = pixelSize / scale;
+        document.querySelectorAll(".link").forEach((a, i) => {
+          const link = LINKS[a.textContent];
+          a.style.left = `${(xOffset + link.col) * unit}px`;
+          a.style.top = `${(yOffset + link.row) * unit}px`;
+          a.style.width = `${link.width * unit}px`;
+          a.style.height = `${link.height * unit}px`;
+        });
       };
 
-      const handleMove = (event) => {
-        updateHoveredLink(event);
-        if (hoveredLink !== null) {
-          document.body.style.cursor = "pointer";
-        } else {
-          document.body.style.cursor = "default";
-        }
-      };
+      const handleMove = (event) => {};
 
-      const handleClick = (event) => {
-        updateHoveredLink(event);
-        if (hoveredLink !== null) {
-          window.open(hoveredLink.href, "_blank");
-        }
-      };
+      const handleClick = (event) => {};
 
       const getOffsets = () => {
         const canvas = document.getElementById("canvas");
@@ -164,21 +136,9 @@
               col < TEXT[row].length &&
               TEXT[row].charAt(col) == "#"
             ) {
-              if (
-                hoveredLink !== null &&
-                hoveredLink.row <= row &&
-                row <= hoveredLink.row + hoveredLink.height &&
-                hoveredLink.col <= col &&
-                col <= hoveredLink.col + hoveredLink.width
-              ) {
-                image.data[base + 0] = 88;
-                image.data[base + 1] = 88;
-                image.data[base + 2] = 88;
-              } else {
-                image.data[base + 0] = 0;
-                image.data[base + 1] = 0;
-                image.data[base + 2] = 0;
-              }
+              image.data[base + 0] = 0;
+              image.data[base + 1] = 0;
+              image.data[base + 2] = 0;
             } else {
               image.data[base + 0] = 255;
               image.data[base + 1] = 255;
@@ -194,6 +154,17 @@
       window.addEventListener("mousemove", handleMove);
       window.addEventListener("mousedown", handleClick);
     </script>
+    <style>
+      .link {
+        position: absolute;
+        color: transparent;
+        overflow: hidden;
+        transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .link:hover {
+        background-color: rgb(255 255 255 / 0.3);
+      }
+    </style>
   </head>
   <body
     style="
@@ -213,11 +184,16 @@
       "
     >
       <h1>Hadrian Reppas</h1>
-      <a href="https://www.github.com/hadrian-reppas" target="_blank">GitHub</a>
-      <a href="https://www.linkedin.com/in/hadrian-reppas" target="_blank"
-        >LinkedIn</a
-      >
     </canvas>
+    <a class="link" href="https://www.github.com/hadrian-reppas" target="_blank"
+      >GitHub</a
+    >
+    <a
+      class="link"
+      href="https://www.linkedin.com/in/hadrian-reppas"
+      target="_blank"
+      >LinkedIn</a
+    >
     <script>
       resize();
     </script>
