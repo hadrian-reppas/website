@@ -82,52 +82,247 @@
         },
       };
 
-      var pixelSize;
+      var canvas, device, context, pipeline, bindGroup, scale, pixelSize;
+      var textureWidth, textureHeight, textureData, texture;
+      var uniformBuffer, uniformData;
 
-      const resize = () => {
-        const scale = window.devicePixelRatio || 1;
-        const canvas = document.getElementById("canvas");
-        canvas.width = scale * window.innerWidth;
-        canvas.height = scale * window.innerHeight;
+      const init = async () => {
+        canvas = document.getElementById("canvas");
+        try {
+          const adapter = await navigator.gpu?.requestAdapter();
+          device = await adapter.requestDevice();
+        } catch {
+          return canvasInit();
+        }
+        context = canvas.getContext("webgpu");
+        const format = navigator.gpu.getPreferredCanvasFormat();
+        context.configure({
+          device,
+          format,
+          alphaMode: "opaque",
+        });
+
+        uniformBuffer = device.createBuffer({
+          size: 16,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        uniformData = new Int32Array(4);
+
+        const shader = device.createShaderModule({
+          code: `
+struct Uniforms {
+    offset: vec2<i32>,
+    pixelSize: i32,
+    _padding: i32,
+};
+
+@group(0) @binding(0)
+var<uniform> uniforms: Uniforms;
+
+@group(0) @binding(1)
+var inputTexture: texture_2d<f32>;
+
+struct VertexOutput {
+    @builtin(position) position: vec4<f32>,
+};
+
+@vertex
+fn vertexMain(
+    @builtin(vertex_index) vertexIndex: u32
+) -> VertexOutput {
+    var positions = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -1.0),
+        vec2<f32>( 3.0, -1.0),
+        vec2<f32>(-1.0,  3.0),
+    );
+
+    var out: VertexOutput;
+    out.position = vec4<f32>(positions[vertexIndex], 0.0, 1.0);
+    return out;
+}
+
+@fragment
+fn fragmentMain(
+    @builtin(position) position: vec4<f32>
+) -> @location(0) vec4<f32> {
+    let outputPixel = vec2<i32>(position.xy);
+
+    let textOrigin = (vec2<i32>(textureDimensions(inputTexture))
+        - vec2<i32>(${TEXT_WIDTH}, ${TEXT_HEIGHT})) / 2;
+    let textPixel = vec2<i32>(floor(
+        vec2<f32>(outputPixel - uniforms.offset) / f32(uniforms.pixelSize)
+    ));
+    let pixelCoords = textPixel + textOrigin;
+
+    let gray = textureLoad(
+        inputTexture,
+        vec2<i32>(pixelCoords),
+        0
+    ).r;
+
+    return vec4<f32>(gray, gray, gray, 1.0);
+}
+`,
+        });
+
+        pipeline = device.createRenderPipeline({
+          layout: "auto",
+          vertex: { module: shader, entryPoint: "vertexMain" },
+          fragment: {
+            module: shader,
+            entryPoint: "fragmentMain",
+            targets: [{ format }],
+          },
+          primitive: { topology: "triangle-list" },
+        });
+
+        window.addEventListener("resize", gpuResize);
+        gpuResize();
+      };
+
+      const gpuResize = () => {
+        const newPixelSize = updatePixelSizeAndCanvas();
+        resizeTexture(newPixelSize);
+        updateUniforms();
+        render();
+        positionLinks();
+      };
+
+      const render = () => {
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginRenderPass({
+          colorAttachments: [
+            {
+              view: context.getCurrentTexture().createView(),
+              loadOp: "clear",
+              storeOp: "store",
+            },
+          ],
+        });
+        pass.setPipeline(pipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.draw(3);
+        pass.end();
+        device.queue.submit([encoder.finish()]);
+      };
+
+      const resizeTexture = (newPixelSize) => {
+        const newTextureWidth = Math.ceil(canvas.width / pixelSize) + 1;
+        const newTextureHeight = Math.ceil(canvas.height / pixelSize) + 1;
+        if (
+          !newPixelSize &&
+          texture &&
+          newTextureWidth <= textureWidth &&
+          newTextureHeight <= textureHeight
+        )
+          return;
+
+        textureWidth = newTextureWidth;
+        textureHeight = newTextureHeight;
+        textureData = new Uint8Array(textureWidth * textureHeight).fill(255);
+
+        const xOrigin = Math.trunc((textureWidth - TEXT_WIDTH) / 2);
+        const yOrigin = Math.trunc((textureHeight - TEXT_HEIGHT) / 2);
+        for (let row = 0; row < TEXT_HEIGHT; ++row) {
+          const y = yOrigin + row;
+          if (y < 0 || y >= textureHeight) continue;
+          for (let col = 0; col < TEXT_WIDTH; ++col) {
+            const x = xOrigin + col;
+            if (x < 0 || x >= textureWidth) continue;
+            if (TEXT[row][col] == "#") textureData[y * textureWidth + x] = 0;
+          }
+        }
+
+        texture?.destroy();
+        texture = device.createTexture({
+          size: [textureWidth, textureHeight],
+          format: "r8unorm",
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+        device.queue.writeTexture(
+          { texture },
+          textureData,
+          {
+            bytesPerRow: textureWidth,
+            rowsPerImage: textureHeight,
+          },
+          {
+            width: textureWidth,
+            height: textureHeight,
+          },
+        );
+
+        bindGroup = device.createBindGroup({
+          layout: pipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: { buffer: uniformBuffer } },
+            { binding: 1, resource: texture.createView() },
+          ],
+        });
+      };
+
+      const updateUniforms = () => {
+        [uniformData[0], uniformData[1]] = getOffsets();
+        uniformData[2] = pixelSize;
+        device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+      };
+
+      const updatePixelSizeAndCanvas = () => {
+        scale = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(scale * window.innerWidth);
+        canvas.height = Math.floor(scale * window.innerHeight);
+        canvas.style.width = `${canvas.width / scale}px`;
+        canvas.style.height = `${canvas.height / scale}px`;
+        oldPixelSize = pixelSize;
         pixelSize =
-          canvas.width >= 5 * TEXT_WIDTH
-            ? 4
-            : canvas.width >= 3.4 * TEXT_WIDTH
-              ? 3
-              : 2;
-        draw();
+          canvas.width >= 8 * TEXT_WIDTH
+            ? 5
+            : canvas.width >= 5 * TEXT_WIDTH
+              ? 4
+              : canvas.width >= 3.4 * TEXT_WIDTH
+                ? 3
+                : 2;
+        return pixelSize !== oldPixelSize;
+      };
+
+      const canvasInit = () => {
+        window.addEventListener("resize", canvasResize);
+        canvasResize();
+      };
+
+      const canvasResize = () => {
+        updatePixelSizeAndCanvas();
+        canvasRender();
+        positionLinks();
+      };
+
+      const positionLinks = () => {
         const [xOffset, yOffset] = getOffsets();
         const unit = pixelSize / scale;
-        document.querySelectorAll(".link").forEach((a, i) => {
+        document.querySelectorAll(".link").forEach((a) => {
           const link = LINKS[a.textContent];
-          a.style.left = `${(xOffset + link.col) * unit}px`;
-          a.style.top = `${(yOffset + link.row) * unit}px`;
+          a.style.left = `${(xOffset + link.col * pixelSize) / scale}px`;
+          a.style.top = `${(yOffset + link.row * pixelSize) / scale}px`;
           a.style.width = `${link.width * unit}px`;
           a.style.height = `${link.height * unit}px`;
         });
       };
 
-      const handleMove = (event) => {};
-
-      const handleClick = (event) => {};
-
       const getOffsets = () => {
-        const canvas = document.getElementById("canvas");
         return [
-          Math.round((canvas.width / pixelSize - TEXT_WIDTH) / 2),
-          Math.round((canvas.height / pixelSize - TEXT_HEIGHT) / 2),
+          Math.floor((canvas.width - TEXT_WIDTH * pixelSize) / 2),
+          Math.floor((canvas.height - TEXT_HEIGHT * pixelSize) / 2),
         ];
       };
 
-      const draw = () => {
-        const canvas = document.getElementById("canvas");
+      const canvasRender = () => {
         const context = canvas.getContext("2d");
         const image = new ImageData(canvas.width, canvas.height);
         const [xOffset, yOffset] = getOffsets();
         for (let i = 0; i < image.height; i++) {
-          const row = Math.floor(i / pixelSize) - yOffset;
+          const row = Math.floor((i - yOffset) / pixelSize);
           for (let j = 0; j < image.width; j++) {
-            const col = Math.floor(j / pixelSize) - xOffset;
+            const col = Math.floor((j - xOffset) / pixelSize);
             const base = 4 * (i * image.width + j);
             if (
               0 <= row &&
@@ -149,10 +344,6 @@
         }
         context.putImageData(image, 0, 0);
       };
-
-      window.addEventListener("resize", resize);
-      window.addEventListener("mousemove", handleMove);
-      window.addEventListener("mousedown", handleClick);
     </script>
     <style>
       .link {
@@ -195,7 +386,7 @@
       >LinkedIn</a
     >
     <script>
-      resize();
+      init();
     </script>
   </body>
 </html>
