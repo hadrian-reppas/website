@@ -177,15 +177,84 @@ fn fragmentMain(
         });
 
         window.addEventListener("resize", gpuResize);
+        window.addEventListener("pointermove", handlePointer);
+        window.addEventListener("pointerdown", handlePointer);
+        window.addEventListener("pointerup", endStroke);
+        window.addEventListener("pointercancel", endStroke);
+        window.addEventListener("pointerout", endStroke);
         gpuResize();
       };
 
+      const lastCells = new Map();
+
+      const handlePointer = (event) => {
+        if (!texture) return;
+        if (event.type == "pointerdown") lastCells.delete(event.pointerId);
+        const [xOffset, yOffset] = getOffsets();
+        let events = event.getCoalescedEvents?.() ?? [];
+        if (events.length == 0) events = [event];
+        let changed = false;
+        for (const e of events) {
+          const cell = [
+            Math.floor((e.clientX * scale - xOffset) / pixelSize),
+            Math.floor((e.clientY * scale - yOffset) / pixelSize),
+          ];
+          const last = lastCells.get(event.pointerId) ?? cell;
+          changed |= paintLine(last, cell);
+          lastCells.set(event.pointerId, cell);
+        }
+        if (changed) {
+          writeTexture();
+          render();
+        }
+      };
+
       const gpuResize = () => {
-        const newPixelSize = updatePixelSizeAndCanvas();
-        resizeTexture(newPixelSize);
+        updatePixelSizeAndCanvas();
+        resizeTexture();
         updateUniforms();
         render();
         positionLinks();
+      };
+
+      const endStroke = (event) => {
+        if (event.type == "pointerup" && event.pointerType == "mouse") return;
+        if (event.type == "pointerout" && event.relatedTarget) return;
+        lastCells.delete(event.pointerId);
+      };
+
+      const paintLine = ([x0, y0], [x1, y1]) => {
+        const dx = Math.abs(x1 - x0);
+        const dy = -Math.abs(y1 - y0);
+        const sx = x0 < x1 ? 1 : -1;
+        const sy = y0 < y1 ? 1 : -1;
+        let err = dx + dy;
+        let changed = false;
+        while (true) {
+          changed |= paintCell(x0, y0);
+          if (x0 == x1 && y0 == y1) return changed;
+          const e2 = 2 * err;
+          if (e2 >= dy) {
+            err += dy;
+            x0 += sx;
+          }
+          if (e2 <= dx) {
+            err += dx;
+            y0 += sy;
+          }
+        }
+      };
+
+      const paintCell = (col, row) => {
+        const [xOrigin, yOrigin] = getTextOrigin();
+        const x = col + xOrigin;
+        const y = row + yOrigin;
+        if (x < 0 || x >= textureWidth || y < 0 || y >= textureHeight)
+          return false;
+        const i = y * textureWidth + x;
+        const changed = textureData[i] != 0;
+        textureData[i] = 0;
+        return changed;
       };
 
       const render = () => {
@@ -206,14 +275,16 @@ fn fragmentMain(
         device.queue.submit([encoder.finish()]);
       };
 
-      const resizeTexture = (newPixelSize) => {
+      const resizeTexture = () => {
+        const textureSize = textureWidth * textureHeight;
         const newTextureWidth = Math.ceil(canvas.width / pixelSize) + 1;
         const newTextureHeight = Math.ceil(canvas.height / pixelSize) + 1;
+        const newTextureSize = newTextureWidth * newTextureHeight;
         if (
-          !newPixelSize &&
           texture &&
           newTextureWidth <= textureWidth &&
-          newTextureHeight <= textureHeight
+          newTextureHeight <= textureHeight &&
+          2 * newTextureSize >= textureSize
         )
           return;
 
@@ -221,8 +292,7 @@ fn fragmentMain(
         textureHeight = newTextureHeight;
         textureData = new Uint8Array(textureWidth * textureHeight).fill(255);
 
-        const xOrigin = Math.trunc((textureWidth - TEXT_WIDTH) / 2);
-        const yOrigin = Math.trunc((textureHeight - TEXT_HEIGHT) / 2);
+        const [xOrigin, yOrigin] = getTextOrigin();
         for (let row = 0; row < TEXT_HEIGHT; ++row) {
           const y = yOrigin + row;
           if (y < 0 || y >= textureHeight) continue;
@@ -239,6 +309,18 @@ fn fragmentMain(
           format: "r8unorm",
           usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         });
+        writeTexture();
+
+        bindGroup = device.createBindGroup({
+          layout: pipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: { buffer: uniformBuffer } },
+            { binding: 1, resource: texture.createView() },
+          ],
+        });
+      };
+
+      const writeTexture = () => {
         device.queue.writeTexture(
           { texture },
           textureData,
@@ -251,14 +333,13 @@ fn fragmentMain(
             height: textureHeight,
           },
         );
+      };
 
-        bindGroup = device.createBindGroup({
-          layout: pipeline.getBindGroupLayout(0),
-          entries: [
-            { binding: 0, resource: { buffer: uniformBuffer } },
-            { binding: 1, resource: texture.createView() },
-          ],
-        });
+      const getTextOrigin = () => {
+        return [
+          Math.trunc((textureWidth - TEXT_WIDTH) / 2),
+          Math.trunc((textureHeight - TEXT_HEIGHT) / 2),
+        ];
       };
 
       const updateUniforms = () => {
@@ -282,7 +363,6 @@ fn fragmentMain(
               : canvas.width >= 3.4 * TEXT_WIDTH
                 ? 3
                 : 2;
-        return pixelSize !== oldPixelSize;
       };
 
       const canvasInit = () => {
@@ -367,12 +447,7 @@ fn fragmentMain(
   >
     <canvas
       id="canvas"
-      style="
-        display: block;
-        width: 100dvw;
-        height: 100dvh;
-        touch-action: manipulation;
-      "
+      style="display: block; width: 100dvw; height: 100dvh; touch-action: none"
     >
       <h1>Hadrian Reppas</h1>
     </canvas>
